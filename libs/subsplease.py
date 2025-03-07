@@ -49,7 +49,7 @@ class SubsPlease:
             return (
                 parse("https://subsplease.org/rss/?r=1080"),
                 parse("https://subsplease.org/rss/?r=720"),
-                parse("https://subsplease.org/rss/?r=sd"),
+                parse("https://subsplease.org/rss/?r=sd"),  # SD contains both 480p & 360p
             )
         except KeyboardInterrupt:
             self._exit()
@@ -58,27 +58,58 @@ class SubsPlease:
             return None, None, None
 
     async def feed_optimizer(self):
-        d1080, d720, d480 = self.rss_feed_data()
-        if not d1080 or not d720 or not d480:
+        d1080, d720, dsd = self.rss_feed_data()
+        if not d1080 or not d720 or not dsd:
             return None
+
         for i in range(2, -1, -1):
             try:
-                f1080, f720, f480 = d1080.entries[i], d720.entries[i], d480.entries[i]
-                a1080, a720, a480 = (
+                f1080, f720 = d1080.entries[i], d720.entries[i]
+
+                # Find 480p and 360p from SD feed
+                f480, f360 = None, None
+                for entry in dsd.entries:
+                    title = entry.title.lower()
+                    if "480p" in title:
+                        f480 = entry
+                    elif "360p" in title:
+                        f360 = entry
+                    if f480 and f360:
+                        break  # Stop searching when both are found
+
+                if not f480 or not f360:
+                    LOGS.warning("Could not find both 480p and 360p in SD feed.")
+
+                a1080, a720, a480, a360 = (
                     (anitopy.parse(f1080.title)).get("anime_title"),
                     (anitopy.parse(f720.title)).get("anime_title"),
-                    (anitopy.parse(f480.title)).get("anime_title"),
+                    (anitopy.parse(f480.title) if f480 else ""),
+                    (anitopy.parse(f360.title) if f360 else ""),
                 )
-                if a1080 == a720 == a480:
+
+                # Ensure all resolutions match the same anime
+                if a1080 == a720 == a480 == a360:
                     if (
                         "[Batch]" in f1080.title
                         or "[Batch]" in f720.title
-                        or "[Batch]" in f480.title
+                        or "[Batch]" in (f480.title if f480 else "")
+                        or "[Batch]" in (f360.title if f360 else "")
                     ):
                         continue
-                    uid = self.digest(f1080.title + f720.title + f480.title)
+
+                    # Create unique ID including 360p
+                    uid = self.digest(
+                        f1080.title + f720.title + (f480.title if f480 else "") + (f360.title if f360 else "")
+                    )
+
                     if not await self.db.is_anime_uploaded(uid):
-                        return {"uid": uid, "1080p": f1080, "720p": f720, "480p": f480}
+                        return {
+                            "uid": uid,
+                            "1080p": f1080,
+                            "720p": f720,
+                            "480p": f480 if f480 else None,  # Handle missing 480p
+                            "360p": f360 if f360 else None,  # Handle missing 360p
+                        }
             except BaseException:
                 LOGS.error(format_exc())
                 return None
