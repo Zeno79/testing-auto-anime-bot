@@ -17,9 +17,11 @@ class SubsPlease:
         self.db = dB
 
     def digest(self, string: str):
+        """Generate a unique hash for an anime release."""
         return hashlib.sha256(string.encode()).hexdigest()
 
     def _exit(self):
+        """Cleanup function before exiting the bot."""
         LOGS.info("Stopping The Bot...")
         try:
             for folder in ["downloads", "thumbs", "encode"]:
