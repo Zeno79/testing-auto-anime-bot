@@ -1,21 +1,3 @@
-#    This file is part of the AutoAnime distribution.
-#    Copyright (c) 2024 Kaif_00z
-#
-#    This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation, version 3.
-#
-#    This program is distributed in the hope that it will be useful, but
-#    WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-#    General Public License for more details.
-#
-# License can be found in <
-# https://github.com/kaif-00z/AutoAnimeBot/blob/main/LICENSE > .
-
-# If you are using this code, don't forget to give proper
-# credit to t.me/kAiF_00z (github.com/kaif-00z)
-
 from traceback import format_exc
 from telethon import Button, events
 from core.bot import Bot
@@ -128,8 +110,15 @@ async def _(e):
 
 async def anime(data):
     try:
-        torr = [data.get("360p"), data.get("480p"), data.get("720p"), data.get("1080p")]
-        anime_info = AnimeInfo(torr[0].title)
+        # ✅ Ensure all resolutions are processed correctly
+        torr = [
+            data.get("360p"),
+            data.get("480p"),
+            data.get("720p"),
+            data.get("1080p"),
+        ]
+        
+        anime_info = AnimeInfo(torr[0]["title"])  # Using dict-based data
         poster = await tools._poster(bot, anime_info)
 
         if await dB.is_separate_channel_upload():
@@ -152,13 +141,15 @@ async def anime(data):
 
         for i in torr:
             if not i:
-                continue  # Skip if no link for a resolution
+                continue  # ✅ Skip if a resolution is missing
 
             try:
-                filename = f"downloads/{i.title}"
-                reporter = Reporter(bot, i.title)
+                filename = f"downloads/{i['title']}"
+                reporter = Reporter(bot, i["title"])
                 await reporter.alert_new_file_founded()
-                await torrent.download_magnet(i.link, "./downloads/")
+
+                if i.get("link", "").startswith("magnet:"):  # ✅ Handle Torrent
+                    await torrent.download_magnet(i["link"], "./downloads/")
 
                 exe = Executors(
                     bot,
@@ -168,7 +159,7 @@ async def anime(data):
                         "button_upload": button_upload,
                     },
                     filename,
-                    AnimeInfo(i.title),
+                    AnimeInfo(i["title"]),
                     reporter,
                 )
                 result, _btn = await exe.execute()
@@ -190,7 +181,7 @@ async def anime(data):
             except BaseException:
                 await reporter.report_error(str(format_exc()), log=True)
                 await reporter.msg.delete()
-                
+
     except BaseException:
         LOGS.error(str(format_exc()))
 
