@@ -104,4 +104,3 @@ class SubsPlease:
                 await function(data)
                 await self.db.add_anime(data.get("uid"))
             await asyncio.sleep(5)
-            
