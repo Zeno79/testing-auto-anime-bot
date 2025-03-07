@@ -1,24 +1,7 @@
-#    This file is part of the AutoAnime distribution.
-#    Copyright (c) 2024 Kaif_00z
-#
-#    This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation, version 3.
-#
-#    This program is distributed in the hope that it will be useful, but
-#    WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-#    General Public License for more details.
-#
-# License can be found in <
-# https://github.com/kaif-00z/AutoAnimeBot/blob/main/LICENSE > .
-
-# if you are using this following code then don't forgot to give proper
-# credit to t.me/kAiF_00z (github.com/kaif-00z)
-
 from traceback import format_exc
 
 from telethon import Button, events
+from telethon.tl.custom import InlineKeyboardMarkup, InlineKeyboardButton
 
 from core.bot import Bot
 from core.executors import Executors
@@ -50,13 +33,12 @@ async def _start(event):
     xnx = await event.reply("`Please Wait...`")
     msg_id = event.pattern_match.group(1)
     await dB.add_broadcast_user(event.sender_id)
+    
     if Var.FORCESUB_CHANNEL and Var.FORCESUB_CHANNEL_LINK:
         is_user_joined = await bot.is_joined(Var.FORCESUB_CHANNEL, event.sender_id)
-        if is_user_joined:
-            pass
-        else:
+        if not is_user_joined:
             return await xnx.edit(
-                f"**Please Join The Following Channel To Use This Bot 🫡**",
+                "**Please Join The Following Channel To Use This Bot 🫡**",
                 buttons=[
                     [Button.url("🚀 JOIN CHANNEL", url=Var.FORCESUB_CHANNEL_LINK)],
                     [
@@ -67,6 +49,7 @@ async def _start(event):
                     ],
                 ],
             )
+
     if msg_id:
         if msg_id.isdigit():
             msg = await bot.get_messages(Var.BACKUP_CHANNEL, ids=int(msg_id))
@@ -83,18 +66,19 @@ async def _start(event):
                 "** <                ADMIN PANEL                 > **",
                 buttons=admin.admin_panel(),
             )
+        
+        reply_markup = InlineKeyboardMarkup([
+            [InlineKeyboardButton('Hanime Channel', url='https://t.me/Hanime_Wide'),
+             InlineKeyboardButton('Movie Channel', url='https://t.me/+v6bKRkdr5tUyMDk1')],
+            [InlineKeyboardButton('Live Action', url='https://t.me/+TDmMO1U8Wgk0MDE1'),
+             InlineKeyboardButton('Jav', url='https://t.me/+6vxkmIlTXOI3ZWU1')],
+        ])
+        
         await event.reply(
-            f"**Enjoy Ongoing Anime's Best Encode 24/7 🫡**",
-            buttons=[
-                [
-                    Button.url("👨‍💻 DEV", url="t.me/kaif_00z"),
-                    Button.url(
-                        "💖 OPEN SOURCE",
-                        url="https://github.com/kaif-00z/AutoAnimeBot/",
-                    ),
-                ]
-            ],
+            "**Welcome! Select a category below:**",
+            buttons=reply_markup,
         )
+    
     await xnx.delete()
 
 
