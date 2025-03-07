@@ -142,9 +142,12 @@ async def _(e):
 
 async def anime(data):
     try:
-        torr = [data.get("480p"), data.get("720p"), data.get("1080p")]
-        anime_info = AnimeInfo(torr[0].title)
+        # Added 360p support
+        torr = [data.get("360p"), data.get("480p"), data.get("720p"), data.get("1080p")]
+        
+        anime_info = AnimeInfo(torr[1].title)  # Using 480p as fallback for title extraction
         poster = await tools._poster(bot, anime_info)
+        
         if await dB.is_separate_channel_upload():
             chat_info = await tools.get_chat_info(bot, anime_info, dB)
             await poster.edit(
@@ -158,15 +161,22 @@ async def anime(data):
                 ]
             )
             poster = await tools._poster(bot, anime_info, chat_info["chat_id"])
+        
         btn = [[]]
         original_upload = await dB.is_original_upload()
         button_upload = await dB.is_button_upload()
+        
         for i in torr:
+            if not i:  # Skip if quality not available
+                continue
             try:
                 filename = f"downloads/{i.title}"
                 reporter = Reporter(bot, i.title)
                 await reporter.alert_new_file_founded()
+                
+                # Downloading 360p along with others
                 await torrent.download_magnet(i.link, "./downloads/")
+                
                 exe = Executors(
                     bot,
                     dB,
@@ -179,6 +189,7 @@ async def anime(data):
                     reporter,
                 )
                 result, _btn = await exe.execute()
+                
                 if result:
                     if _btn:
                         if len(btn[0]) == 2:
@@ -186,8 +197,10 @@ async def anime(data):
                         else:
                             btn[0].append(_btn)
                         await poster.edit(buttons=btn)
+                    
                     asyncio.ensure_future(exe.further_work())
                     continue
+                
                 await reporter.report_error(_btn, log=True)
                 await reporter.msg.delete()
             except BaseException:
@@ -195,7 +208,6 @@ async def anime(data):
                 await reporter.msg.delete()
     except BaseException:
         LOGS.error(str(format_exc()))
-
 
 try:
     bot.loop.run_until_complete(subsplease.on_new_anime(anime))
