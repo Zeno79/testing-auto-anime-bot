@@ -31,18 +31,23 @@ class SubsPlease:
         sys.exit(0)
 
     def rss_feed_data(self):
-        """Fetch RSS feeds for available resolutions."""
-        try:
-            return (
-                parse("https://subsplease.org/rss/?r=1080"),
-                parse("https://subsplease.org/rss/?r=720"),
-                parse("https://subsplease.org/rss/?r=480"),
-            )
-        except KeyboardInterrupt:
-            self._exit()
-        except Exception:
-            LOGS.error(format_exc())
+    """Fetch RSS feeds for available resolutions."""
+    try:
+        urls = {
+            "1080p": "https://subsplease.org/rss/?r=1080",
+            "720p": "https://subsplease.org/rss/?r=720",
+            "480p": "https://subsplease.org/rss/?r=480",
+        }
+        feeds = {res: parse(url) for res, url in urls.items()}
+        if any(not feeds[res].entries for res in feeds):  # Check for empty feeds
+            LOGS.warning("❌ No anime entries found in RSS feeds")
             return None, None, None
+        return feeds["1080p"], feeds["720p"], feeds["480p"]
+    except KeyboardInterrupt:
+        self._exit()
+    except Exception as e:
+        LOGS.error(f"RSS Feed Error: {format_exc()}")
+        return None, None, None
 
     async def feed_optimizer(self):
         """Process the latest anime releases and filter out batches."""
