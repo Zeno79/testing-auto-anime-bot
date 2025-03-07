@@ -1,7 +1,5 @@
 from traceback import format_exc
-
 from telethon import Button, events
-from telethon.tl.custom import InlineKeyboardMarkup, InlineKeyboardButton
 
 from core.bot import Bot
 from core.executors import Executors
@@ -33,7 +31,7 @@ async def _start(event):
     xnx = await event.reply("`Please Wait...`")
     msg_id = event.pattern_match.group(1)
     await dB.add_broadcast_user(event.sender_id)
-    
+
     if Var.FORCESUB_CHANNEL and Var.FORCESUB_CHANNEL_LINK:
         is_user_joined = await bot.is_joined(Var.FORCESUB_CHANNEL, event.sender_id)
         if not is_user_joined:
@@ -66,19 +64,21 @@ async def _start(event):
                 "** <                ADMIN PANEL                 > **",
                 buttons=admin.admin_panel(),
             )
-        
-        reply_markup = InlineKeyboardMarkup([
-            [InlineKeyboardButton('Hanime Channel', url='https://t.me/Hanime_Wide'),
-             InlineKeyboardButton('Movie Channel', url='https://t.me/+v6bKRkdr5tUyMDk1')],
-            [InlineKeyboardButton('Live Action', url='https://t.me/+TDmMO1U8Wgk0MDE1'),
-             InlineKeyboardButton('Jav', url='https://t.me/+6vxkmIlTXOI3ZWU1')],
-        ])
-        
+
         await event.reply(
             "**Welcome! Select a category below:**",
-            buttons=reply_markup,
+            buttons=[
+                [
+                    Button.url("📺 Hanime Channel", url="https://t.me/Hanime_Wide"),
+                    Button.url("🎬 Movie Channel", url="https://t.me/+v6bKRkdr5tUyMDk1"),
+                ],
+                [
+                    Button.url("🎥 Live Action", url="https://t.me/+TDmMO1U8Wgk0MDE1"),
+                    Button.url("🔞 Jav", url="https://t.me/+6vxkmIlTXOI3ZWU1"),
+                ],
+            ],
         )
-    
+
     await xnx.delete()
 
 
