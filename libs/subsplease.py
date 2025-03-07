@@ -31,23 +31,27 @@ class SubsPlease:
         sys.exit(0)
 
     def rss_feed_data(self):
-    """Fetch RSS feeds for available resolutions."""
-    try:
-        urls = {
-            "1080p": "https://subsplease.org/rss/?r=1080",
-            "720p": "https://subsplease.org/rss/?r=720",
-            "480p": "https://subsplease.org/rss/?r=480",
-        }
-        feeds = {res: parse(url) for res, url in urls.items()}
-        if any(not feeds[res].entries for res in feeds):  # Check for empty feeds
-            LOGS.warning("❌ No anime entries found in RSS feeds")
+        """Fetch RSS feeds for available resolutions."""
+        try:
+            urls = {
+                "1080p": "https://subsplease.org/rss/?r=1080",
+                "720p": "https://subsplease.org/rss/?r=720",
+                "480p": "https://subsplease.org/rss/?r=480",
+            }
+            feeds = {res: parse(url) for res, url in urls.items()}
+
+            # Check if all feeds are empty
+            if all(not feeds[res].entries for res in feeds):
+                LOGS.warning("❌ No anime entries found in RSS feeds")
+                return None, None, None
+
+            return feeds["1080p"], feeds["720p"], feeds["480p"]
+
+        except KeyboardInterrupt:
+            self._exit()
+        except Exception:
+            LOGS.error(f"RSS Feed Error: {format_exc()}")
             return None, None, None
-        return feeds["1080p"], feeds["720p"], feeds["480p"]
-    except KeyboardInterrupt:
-        self._exit()
-    except Exception as e:
-        LOGS.error(f"RSS Feed Error: {format_exc()}")
-        return None, None, None
 
     async def feed_optimizer(self):
         """Process the latest anime releases and filter out batches."""
@@ -55,12 +59,7 @@ class SubsPlease:
         if not d1080 or not d720 or not d480:
             return None
 
-        min_length = min(len(d1080.entries), len(d720.entries), len(d480.entries))
-        if min_length == 0:
-            LOGS.warning("❌ No anime entries found in RSS feeds.")
-            return None
-
-        for i in range(min(3, min_length) - 1, -1, -1):  # Loop through available entries
+        for i in range(2, -1, -1):  # Loop through latest 3 entries
             try:
                 f1080, f720, f480 = d1080.entries[i], d720.entries[i], d480.entries[i]
                 a1080, a720, a480 = (
@@ -81,12 +80,12 @@ class SubsPlease:
                             "720p": f720,
                             "480p": f480,
                         }
-            except IndexError as e:
-                LOGS.error(f"❌ IndexError in feed_optimizer: {e}")
+            except IndexError:
+                LOGS.error(f"❌ IndexError: List index out of range at {i}")
             except Exception:
                 LOGS.error(format_exc())
 
-        return None  # If no new anime found
+        return None
 
     async def generate_360p(self, file_path, output_path):
         """Convert 480p file to 360p using ffmpeg."""
@@ -95,10 +94,10 @@ class SubsPlease:
             cmd = f"ffmpeg -i {file_path} -vf scale=-1:360 -c:v libx264 -preset fast -crf 28 -c:a copy {output_path}"
             process = await asyncio.create_subprocess_shell(cmd)
             await process.communicate()
-            LOGS.info(f"✅ 360p version saved at {output_path}")
+            LOGS.info(f"360p version saved at {output_path}")
             return output_path
         except Exception as e:
-            LOGS.error(f"❌ Error generating 360p: {e}")
+            LOGS.error(f"Error generating 360p: {e}")
             return None
 
     async def on_new_anime(self, function):
@@ -109,12 +108,13 @@ class SubsPlease:
                 # ✅ Generate 360p from 480p before processing
                 file_480p = f"downloads/{data['480p'].title}"
                 file_360p = file_480p.replace("480p", "360p")
-                
+
                 converted_360p = await self.generate_360p(file_480p, file_360p)
                 if converted_360p:
                     data["360p"] = {"title": file_360p, "link": file_360p}
 
                 await function(data)
                 await self.db.add_anime(data.get("uid"))
+
             await asyncio.sleep(5)
-            
+                
