@@ -1,21 +1,3 @@
-#    This file is part of the AutoAnime distribution.
-#    Copyright (c) 2025 Kaif_00z
-#
-#    This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation, version 3.
-#
-#    This program is distributed in the hope that it will be useful, but
-#    WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-#    General Public License for more details.
-#
-# License can be found in <
-# https://github.com/kaif-00z/AutoAnimeBot/blob/main/LICENSE > .
-
-# if you are using this following code then don't forgot to give proper
-# credit to t.me/kAiF_00z (github.com/kaif-00z)
-
 from traceback import format_exc
 
 import anitopy
@@ -27,15 +9,15 @@ from libs.logger import LOGS
 class AnimeInfo:
     def __init__(self, name):
         self.kitsu = RawAnimeInfo()
-        self.CAPTION = """
-**{}
-━━━━━━━━━━━━━━━
-‣ Language:** `Japanese [ESub]`
-**‣ Quality:** `480p|720p|1080p`
-**‣ Season:** `{}`
-**‣ Episode:** `{}`
-**━━━━━━━━━━━━━━━**
-**‣Join :- @Unfold_Network
+        self.CAPTION = """× {} | {} ×
+╭──────────────────────── 
+│Season: {}
+│Episode: {}
+│Language: Japanese [ESub]
+│Quality: 360p, 480p, 720p, 1080p
+├────────────────────────
+│ @Anime_Wide | @Team_Wide
+╰────────────────────────
 """
         self.proper_name = self.get_proper_name_for_func(name)
         self.name = name
@@ -73,6 +55,7 @@ class AnimeInfo:
             if self.proper_name or self.data:
                 return self.CAPTION.format(
                     (await self.get_english()),
+                    self.proper_name,
                     str(self.data.get("anime_season") or 1).zfill(2),
                     (
                         str(self.data.get("episode_number")).zfill(2)
@@ -89,17 +72,15 @@ class AnimeInfo:
             anime_name = self.data.get("anime_title")
             if anime_name and self.data.get("episode_number"):
                 return (
-                    f"[S{self.data.get('anime_season') or 1}-{self.data.get('episode_number') or ''}] {(await self.get_english())} [{self.data.get('video_resolution')}].mkv".replace(
-                        "‘", ""
-                    )
+                    f"[S{self.data.get('anime_season') or 1}-{self.data.get('episode_number') or ''}] {(await self.get_english())} [{self.data.get('video_resolution')}].mkv"
+                    .replace("‘", "")
                     .replace("’", "")
                     .strip()
                 )
             if anime_name:
                 return (
-                    f"{(await self.get_english())} [{self.data.get('video_resolution')}].mkv".replace(
-                        "‘", ""
-                    )
+                    f"{(await self.get_english())} [{self.data.get('video_resolution')}].mkv"
+                    .replace("‘", "")
                     .replace("’", "")
                     .strip()
                 )
@@ -127,3 +108,4 @@ class AnimeInfo:
         except Exception as error:
             LOGS.error(str(error))
             LOGS.exception(format_exc())
+            
