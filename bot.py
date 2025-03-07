@@ -1,4 +1,23 @@
+#    This file is part of the AutoAnime distribution.
+#    Copyright (c) 2024 Kaif_00z
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, version 3.
+#
+#    This program is distributed in the hope that it will be useful, but
+#    WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+#    General Public License for more details.
+#
+# License can be found in <
+# https://github.com/kaif-00z/AutoAnimeBot/blob/main/LICENSE > .
+
+# if you are using this following code then don't forgot to give proper
+# credit to t.me/kAiF_00z (github.com/kaif-00z)
+
 from traceback import format_exc
+
 from telethon import Button, events
 
 from core.bot import Bot
@@ -31,12 +50,13 @@ async def _start(event):
     xnx = await event.reply("`Please Wait...`")
     msg_id = event.pattern_match.group(1)
     await dB.add_broadcast_user(event.sender_id)
-
     if Var.FORCESUB_CHANNEL and Var.FORCESUB_CHANNEL_LINK:
         is_user_joined = await bot.is_joined(Var.FORCESUB_CHANNEL, event.sender_id)
-        if not is_user_joined:
+        if is_user_joined:
+            pass
+        else:
             return await xnx.edit(
-                "**Please Join The Following Channel To Use This Bot 🫡**",
+                f"**Please Join The Following Channel To Use This Bot 🫡**",
                 buttons=[
                     [Button.url("🚀 JOIN CHANNEL", url=Var.FORCESUB_CHANNEL_LINK)],
                     [
@@ -47,7 +67,6 @@ async def _start(event):
                     ],
                 ],
             )
-
     if msg_id:
         if msg_id.isdigit():
             msg = await bot.get_messages(Var.BACKUP_CHANNEL, ids=int(msg_id))
@@ -64,21 +83,18 @@ async def _start(event):
                 "** <                ADMIN PANEL                 > **",
                 buttons=admin.admin_panel(),
             )
-
         await event.reply(
-            "**Welcome! Select a category below:**",
+            f"**Enjoy Ongoing Anime's Best Encode 24/7 🫡**",
             buttons=[
                 [
-                    Button.url("📺 Hanime Channel", url="https://t.me/Hanime_Wide"),
-                    Button.url("🎬 Movie Channel", url="https://t.me/+v6bKRkdr5tUyMDk1"),
-                ],
-                [
-                    Button.url("🎥 Live Action", url="https://t.me/+TDmMO1U8Wgk0MDE1"),
-                    Button.url("🔞 Jav", url="https://t.me/+6vxkmIlTXOI3ZWU1"),
-                ],
+                    Button.url("👨‍💻 DEV", url="t.me/kaif_00z"),
+                    Button.url(
+                        "💖 OPEN SOURCE",
+                        url="https://github.com/kaif-00z/AutoAnimeBot/",
+                    ),
+                ]
             ],
         )
-
     await xnx.delete()
 
 
@@ -126,12 +142,9 @@ async def _(e):
 
 async def anime(data):
     try:
-        # Added 360p support
-        torr = [data.get("360p"), data.get("480p"), data.get("720p"), data.get("1080p")]
-        
-        anime_info = AnimeInfo(torr[1].title)  # Using 480p as fallback for title extraction
+        torr = [data.get("480p"), data.get("720p"), data.get("1080p")]
+        anime_info = AnimeInfo(torr[0].title)
         poster = await tools._poster(bot, anime_info)
-        
         if await dB.is_separate_channel_upload():
             chat_info = await tools.get_chat_info(bot, anime_info, dB)
             await poster.edit(
@@ -145,22 +158,15 @@ async def anime(data):
                 ]
             )
             poster = await tools._poster(bot, anime_info, chat_info["chat_id"])
-        
         btn = [[]]
         original_upload = await dB.is_original_upload()
         button_upload = await dB.is_button_upload()
-        
         for i in torr:
-            if not i:  # Skip if quality not available
-                continue
             try:
                 filename = f"downloads/{i.title}"
                 reporter = Reporter(bot, i.title)
                 await reporter.alert_new_file_founded()
-                
-                # Downloading 360p along with others
                 await torrent.download_magnet(i.link, "./downloads/")
-                
                 exe = Executors(
                     bot,
                     dB,
@@ -173,7 +179,6 @@ async def anime(data):
                     reporter,
                 )
                 result, _btn = await exe.execute()
-                
                 if result:
                     if _btn:
                         if len(btn[0]) == 2:
@@ -181,10 +186,8 @@ async def anime(data):
                         else:
                             btn[0].append(_btn)
                         await poster.edit(buttons=btn)
-                    
                     asyncio.ensure_future(exe.further_work())
                     continue
-                
                 await reporter.report_error(_btn, log=True)
                 await reporter.msg.delete()
             except BaseException:
@@ -192,6 +195,7 @@ async def anime(data):
                 await reporter.msg.delete()
     except BaseException:
         LOGS.error(str(format_exc()))
+
 
 try:
     bot.loop.run_until_complete(subsplease.on_new_anime(anime))
