@@ -59,7 +59,13 @@ class SubsPlease:
         if not d1080 or not d720 or not d480:
             return None
 
-        for i in range(2, -1, -1):  # Loop through latest 3 entries
+        # Get the minimum number of available entries to avoid IndexError
+        num_entries = min(len(d1080.entries), len(d720.entries), len(d480.entries))
+        if num_entries == 0:
+            LOGS.warning("❌ No anime entries available in feed.")
+            return None
+
+        for i in range(num_entries - 1, -1, -1):  # Loop through available entries
             try:
                 f1080, f720, f480 = d1080.entries[i], d720.entries[i], d480.entries[i]
                 a1080, a720, a480 = (
@@ -94,10 +100,10 @@ class SubsPlease:
             cmd = f"ffmpeg -i {file_path} -vf scale=-1:360 -c:v libx264 -preset fast -crf 28 -c:a copy {output_path}"
             process = await asyncio.create_subprocess_shell(cmd)
             await process.communicate()
-            LOGS.info(f"360p version saved at {output_path}")
+            LOGS.info(f"✅ 360p version saved at {output_path}")
             return output_path
         except Exception as e:
-            LOGS.error(f"Error generating 360p: {e}")
+            LOGS.error(f"❌ Error generating 360p: {e}")
             return None
 
     async def on_new_anime(self, function):
@@ -117,4 +123,4 @@ class SubsPlease:
                 await self.db.add_anime(data.get("uid"))
 
             await asyncio.sleep(5)
-                
+            
